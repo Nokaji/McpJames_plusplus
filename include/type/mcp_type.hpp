@@ -57,36 +57,54 @@ struct McpMessage {
     bool isRequest = true;
 };
 
+struct McpTransportConfig {
+    enum class TransportType {
+        HTTP,
+        WEBSOCKET,
+        SSE
+    } type = TransportType::SSE;
+
+    std::variant<HttpConfig, WebSocketConfig, SseConfig> config;
+
+    NLOHMANN_JSON_SERIALIZE_ENUM(TransportType, {
+        {TransportType::HTTP, "HTTP"},
+        {TransportType::WEBSOCKET, "WEBSOCKET"},
+        {TransportType::SSE, "SSE"}
+    })
+
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(McpTransportConfig, type, config)
+};
+
 struct McpServerConfig {
     std::string name;
     std::string description;
     bool autoReconnect = true;
     int maxRetries = 3;
     int retryDelayMs = 1000;
+
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(McpServerConfig, name, description, autoReconnect, maxRetries, retryDelayMs)
 };
 
 using ConnectionCallback = std::function<void(const std::string& serverId, ConnectionStatus status)>;
 using MessageCallback = std::function<void(const std::string& serverId, const McpMessage& message)>;
 using ErrorCallback = std::function<void(const std::string& serverId, const std::string& error)>;
 
-class IMcpTransport {
-public:
-    virtual ~IMcpTransport() = default;
-    virtual bool connect() = 0;
-    virtual void disconnect() = 0;
-    virtual bool isConnected() const = 0;
-    virtual std::future<std::string> sendMessage(const McpMessage& message) = 0;
-    virtual void setMessageCallback(MessageCallback callback) = 0;
-    virtual void setErrorCallback(ErrorCallback callback) = 0;
-};
-
 struct McpServerInfo {
     std::string id;
     McpServerConfig config;
-    std::unique_ptr<Transport> transport;
+    std::unique_ptr<Transport> transport = nullptr;
+    std::unique_ptr<McpTransportConfig> transportConfigJson = nullptr;
     ConnectionStatus status = ConnectionStatus::DISCONNECTED;
     std::chrono::steady_clock::time_point lastConnected;
     int retryCount = 0;
+
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(McpServerInfo, id, config, transport, transportConfigJson, status, lastConnected, retryCount)
+
+    static McpServerInfo fromJson(const nlohmann::json& j) {
+        McpServerInfo info;
+        j.get_to(info);
+        return info;
+    }
 };
 }
 };
