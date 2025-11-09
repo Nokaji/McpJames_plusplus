@@ -38,6 +38,8 @@ public:
                 } else {
                     std::cout << "  - Result: " << res.result.dump(2) << std::endl;
                 }
+
+                call("initialize", nlohmann::json::object());
             } catch (const std::exception& e) {
                 std::cout << "[MCP] Error parsing response: " << e.what() << std::endl;
             }
@@ -61,4 +63,6 @@ public:
         std::cout << "[MCP] Stopping transport..." << std::endl;
         transport->stop(); 
     }
-};}
+};
+
+} // namespace mcp

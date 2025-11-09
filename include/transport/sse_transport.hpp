@@ -202,9 +202,11 @@ public:
             client = std::make_shared<httplib::Client>(config.url);
             
             client->set_connection_timeout(10, 0);
-            client->set_read_timeout(0, 500000);
+            // Augmenter le timeout de lecture pour SSE (pas de timeout pour les connexions persistantes)
+            client->set_read_timeout(300, 0); // 5 minutes au lieu de 0.5 secondes
             
             client->set_compress(false);
+            client->set_keep_alive(true);
             
             int attemptCount = 0;
             const int maxAttempts = config.maxRetries > 0 ? config.maxRetries : -1;
@@ -237,11 +239,14 @@ public:
                         headers,
                         [&](const char* data, size_t len) {
                             if (!running.load()) {
+                                std::cout << "[SSE Transport] Stopping stream reading (user requested)" << std::endl;
                                 return false;
                             }
                             
                             std::string chunk(data, len);
                             if (!chunk.empty()) {
+                                // Debug: afficher les données brutes reçues
+                                std::cout << "[SSE Transport] Received chunk (" << len << " bytes)" << std::endl;
                                 parseSSEMessage(chunk, onMessage);
                             }
                             return true;
@@ -256,13 +261,30 @@ public:
                     connected.store(false);
                     
                     if (!res) {
+                        auto errorType = res.error();
                         std::cout << "[SSE Transport] Connection error: " 
-                                  << httplib::to_string(res.error()) << std::endl;
+                                  << httplib::to_string(errorType) << std::endl;
+                        
+                        // Plus de détails sur l'erreur
+                        switch (errorType) {
+                            case httplib::Error::Connection:
+                                std::cout << "  → Erreur de connexion (serveur inaccessible?)" << std::endl;
+                                break;
+                            case httplib::Error::Read:
+                                std::cout << "  → Erreur de lecture (timeout ou connexion fermée)" << std::endl;
+                                break;
+                            case httplib::Error::Write:
+                                std::cout << "  → Erreur d'écriture" << std::endl;
+                                break;
+                            default:
+                                std::cout << "  → Erreur code: " << static_cast<int>(errorType) << std::endl;
+                                break;
+                        }
                     } else if (res->status != 200) {
                         std::cout << "[SSE Transport] HTTP error " << res->status 
                                   << ": " << res->body << std::endl;
                     } else {
-                        std::cout << "[SSE Transport] Connection closed by server" << std::endl;
+                        std::cout << "[SSE Transport] Connection closed by server (normal)" << std::endl;
                     }
                     
                     attemptCount++;
@@ -270,7 +292,7 @@ public:
                     if (running.load() && (maxAttempts == -1 || attemptCount < maxAttempts)) {
                         int delay = std::min(config.reconnectDelayMs * (attemptCount > 1 ? attemptCount : 1), 30000);
                         std::cout << "[SSE Transport] Reconnecting in " << delay << "ms (attempt " 
-                                  << attemptCount << ")" << std::endl;
+                                  << (attemptCount + 1) << "/" << (maxAttempts == -1 ? "∞" : std::to_string(maxAttempts)) << ")" << std::endl;
                         std::this_thread::sleep_for(std::chrono::milliseconds(delay));
                     }
                     
