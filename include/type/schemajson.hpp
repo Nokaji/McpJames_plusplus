@@ -7,7 +7,7 @@
 #include <nlohmann/json.hpp>
 
 namespace mcp {
-
+namespace type {
 // ============================================================================
 // Common Types and Enums
 // ============================================================================
@@ -720,5 +720,5 @@ struct RootsListChangedNotification {
 // ============================================================================
 
 using EmptyResult = Result;
-
+} // namespace type
 } // namespace mcp

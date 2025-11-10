@@ -3,7 +3,7 @@
 #include <nlohmann/json.hpp>
 
 namespace mcp {
-
+namespace type {
 // ============================================================================
 // JSON Serialization for Enums
 // ============================================================================
@@ -389,5 +389,5 @@ inline void from_json(const nlohmann::json& j, ListToolsResult& r) {
 }
 
 // Add more serialization functions as needed...
-
+} // namespace type
 } // namespace mcp
