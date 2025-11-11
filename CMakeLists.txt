@@ -5,6 +5,8 @@ set(MCPJAMESPLUSPLUS_HEADERS
     include/transport/transport.hpp
     include/transport/http_transport.hpp
     include/transport/sse_transport.hpp
+    include/type/schema.hpp
+    include/type/schema_serialization.hpp
 )
 
 add_library(mcpjamesplusplus INTERFACE)

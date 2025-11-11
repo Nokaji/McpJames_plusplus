@@ -1,5 +1,5 @@
 #pragma once
-#include "schemajson.hpp"
+#include "schema.hpp"
 #include <nlohmann/json.hpp>
 
 namespace mcp {
