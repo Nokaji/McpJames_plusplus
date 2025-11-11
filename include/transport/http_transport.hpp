@@ -24,6 +24,10 @@ public:
     }
 
     void stop() override {}
+
+    Transport::Config getConfig() const override{
+        return config;
+    }
 };
 
 }

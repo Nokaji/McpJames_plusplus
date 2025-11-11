@@ -1,6 +1,6 @@
 #pragma once
+#include "../type/mcp_type.hpp"
 #include "transport.hpp"
-#include "type/mcp_type.hpp"
 #include <httplib.h>
 #include <thread>
 #include <atomic>
@@ -330,6 +330,10 @@ public:
         }
         
         std::cout << "[SSE Transport] Stopped" << std::endl;
+    }
+
+    Transport::Config getConfig() const override{
+        return config;
     }
 };
 
